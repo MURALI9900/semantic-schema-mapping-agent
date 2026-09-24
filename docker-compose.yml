@@ -33,29 +33,46 @@ services:
     networks: [banking]
 
   ai-service:
-    build: ./backend/ai-service
+    build:
+      context: .
+      dockerfile: backend/ai-service/Dockerfile
     networks: [banking]
 
   audit-service:
-    build: ./backend/audit-service
+    build:
+      context: .
+      dockerfile: backend/audit-service/Dockerfile
     networks: [banking]
 
   banking-operations-service:
-    build: ./backend/banking-operations-service
+    build:
+      context: .
+      dockerfile: backend/banking-operations-service/Dockerfile
     depends_on: [kafka]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks: [banking]
 
   semantic-agent-service:
-    build: .
-    depends_on: [postgres, kafka, ai-service, audit-service]
+    build:
+      context: .
+      dockerfile: backend/semantic-agent-service/Dockerfile
+    depends_on: [postgres, kafka, ai-service]
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB:-semantic_banking}
       POSTGRES_USER: ${POSTGRES_USER:-semantic_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AI_SERVICE_URL: http://ai-service:8084
+    networks: [banking]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: backend/api-gateway/Dockerfile
+    depends_on: [semantic-agent-service]
+    ports: ["8080:8080"]
     networks: [banking]
 
 volumes:
