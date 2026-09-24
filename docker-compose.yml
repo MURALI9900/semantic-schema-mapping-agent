@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-semantic_banking}
+      POSTGRES_USER: ${POSTGRES_USER:-semantic_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d/01-migrations:ro
+      - ./database/seed:/docker-entrypoint-initdb.d/02-seed:ro
+    networks: [banking]
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks: [banking]
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    depends_on: [zookeeper]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports: ["9092:9092"]
+    networks: [banking]
+
+  ai-service:
+    build: ./backend/ai-service
+    networks: [banking]
+
+  audit-service:
+    build: ./backend/audit-service
+    networks: [banking]
+
+  banking-operations-service:
+    build: ./backend/banking-operations-service
+    depends_on: [kafka]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks: [banking]
+
+  semantic-agent-service:
+    build: .
+    depends_on: [postgres, kafka, ai-service, audit-service]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-semantic_banking}
+      POSTGRES_USER: ${POSTGRES_USER:-semantic_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    networks: [banking]
+
+volumes:
+  postgres_data:
+
+networks:
+  banking:
+    driver: bridge
