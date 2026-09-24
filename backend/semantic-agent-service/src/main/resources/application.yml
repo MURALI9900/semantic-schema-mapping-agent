@@ -13,5 +13,4 @@ spring:
     open-in-view: false
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+AI_SERVICE_URL: ${AI_SERVICE_URL:http://localhost:8084}
