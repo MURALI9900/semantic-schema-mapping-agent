@@ -1,0 +1,20 @@
+server:
+  port: 8086
+spring:
+  application:
+    name: semantic-agent-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:semantic_banking}
+    username: ${POSTGRES_USER:semantic_user}
+    password: ${POSTGRES_PASSWORD:change_me}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
